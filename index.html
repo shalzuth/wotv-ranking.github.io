@@ -83,7 +83,7 @@
             function toggleDarkLight() {
                 var newCss = 'https://stackpath.bootstrapcdn.com/bootswatch/4.5.0/darkly/bootstrap.min.css';
                 document.cookie = 'theme=dark';
-                if (document.getElementsByTagName('head')[0].lastElementChild.outerHTML.includes('bootstrapdark')) {
+                if (document.getElementsByTagName('head')[0].lastElementChild.outerHTML.includes('darkly')) {
                     newCss = 'https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css';
                     document.cookie = 'theme=light';
                 }
