@@ -9,7 +9,14 @@ var inited = false;
 $(document).ajaxStop(function () {
     if (inited) return;
     inited = true;
+    test();
 });
+
+function test(){
+    var d = "eyJkYXRhSWQiOiJVTl9MV19QX1dISVMiLCJzdGFyIjoxLCJsYiI6MCwibGV2ZWwiOjEsImpvYnMiOlsxLDEsMV0sIm5vZGVzIjp7IjIiOjEsIjUiOjF9LCJtYXN0ZXJTa2lsbCI6LTEsImFjdGl2YXRlZFN1cHBvcnQiOlsiMCIsIjAiXSwiZXNwZXIiOm51bGwsImNhcmQiOm51bGwsImVxdWlwbWVudHMiOltudWxsLG51bGwsbnVsbF19";
+    // console.log(atob(d));
+    // showBattleRecord(580367444, 146311);
+}
 var guildJsonBase = 'https://bhtcookie.blob.core.windows.net/bhtguild/';
 var GuildRankings = {}; $.getJSON(guildJsonBase + 'guildrankings.json', function (res) {
     GuildRankings = res;
@@ -66,7 +73,7 @@ function xpToLvl(exp, type){
         var awake1 = type.includes('_AW1') ? 'awake2' : 'awake1';
         var baseEsper = type.replace('_AW1', '');
         var rawEsper = GameData['Unit']['items'].find(q => q['iname'] === baseEsper);
-        xpItems = GameData['NBeastLvTbl']['items'].find(q => q['iname'] == rawEsper['nb_lv_tbl'])['awake1'].map(x=>x['exp']);
+        xpItems = GameData['NBeastLvTbl']['items'].find(q => q['iname'] == rawEsper['nb_lv_tbl'])[awake1].map(x=>x['exp']);
     }
     else xpItems = GameData[type]['items'];
     var lvl = 0;
@@ -102,6 +109,59 @@ function roundStats(bonusStats){
         bonusStats[stats[i]] = Math.floor(bonusStats[stats[i]]);
 }
 
+var builderStats = {
+    "hp": "HP",
+    "mp": "TP",
+    "ap": "AP",
+    "atk": "ATK",
+    "def": "DEF",
+    "mnd": "SPR",
+    "mag": "MAG",
+    "dex": "DEX",
+    "spd": "AGI",
+    "luk": "LUCK",
+    "iniap": "INITIAL_AP",
+
+    "hit" : "ACCURACY",
+    "crt" : "CRITIC_RATE",
+    "crta": "CRITIC_AVOID",
+    "avd" : "EVADE",
+
+    "efi": "FIRE_RES",
+    "eic": "ICE_RES",
+    "eea": "EARTH_RES",
+    "ewi": "WIND_RES",
+    "eth": "LIGHTNING_RES",
+    "ewa": "WATER_RES",
+    "esh": "LIGHT_RES",
+    "eda": "DARK_RES",
+
+    "asl": "SLASH_RES",
+    "api": "PIERCE_RES",
+    "abl": "STRIKE_RES",
+    "ash": "MISSILE_RES",
+    "ama": "MAGIC_RES",
+
+    "cpo": "POISON_RES",
+    "cbl": "BLIND_RES",
+    "csl": "SLEEP_RES",
+    "cmu": "SILENCE_RES",
+    "cpa": "PARALYZE_RES",
+    "ccf": "CONFUSION_RES",
+    "cpe": "PETRIFY_RES",
+    "cfr": "TOAD_RES",
+    "cch": "CHARM_RES",
+    "csw": "SLOW_RES",
+    "cst": "STOP_RES",
+    "cdm": "IMMOBILIZE_RES",
+    "cda": "DISABLE_RES",
+    "cbe": "BERSERK_RES",
+    "cdo": "DOOM_RES",
+
+    "mov": "MOVE",
+    "jmp": "JUMP",
+    "lv": "MAX_LV"
+}
 var stats = ['hp', 'atk', 'mag'];
 var first = 3;
 function addPlayers(res, team){
@@ -150,7 +210,7 @@ function addPlayers(res, team){
             var jobVal = [1, 1, 1];
             for (var m = 0; m < unit['jobs'].length; m++){
                 var job = GameData['Job']['items'].find(q => q['iname'] === unit['jobs'][m]['job_iname']);
-                var ratio = unit['jobs'][m]['job_iname'] == rawUnit['jobsets'][0] ? 100 : 200;
+                var ratio = (unit['jobs'][m]['job_iname'] == rawUnit['jobsets'][0]) ? 100 : 200;
                 for (var k = 0; k < stats.length; k++){     
                     jobVal[k] += ((parseInt(job['ranks'][parseInt(unit['jobs'][m]['lv']) - 1][stats[k]]) / ratio) / 100);
                 }
@@ -200,8 +260,9 @@ function addPlayers(res, team){
             // console.log(passiveStats);
             var esper = player['parties'][0]['netherbeasts'][j];
             if (esper['iname']){
-                var esperResonance = player['parties'][0]['synchros'].find(s=>s['iname1'] === esper['iname'] && s['iname2'] === unit['iname']);
-                var esperResonanceMultiplier = esperResonance == null ? 0.1 : (Math.floor(esperResonance['val']/100 + 1) / 10);
+                var esperResonanceStat = player['parties'][0]['synchros'].find(s=>s['iname1'] === esper['iname'] && s['iname2'] === unit['iname']);
+                var esperResonance = esperResonanceStat == null ? 1 : (Math.floor(esperResonanceStat['val']/100 + 1));
+                var esperResonanceMultiplier = esperResonance / 10;
                 var esperMaxLevel = esper['awake'] == 1 ? 50 : 80;
                 var esperIname = esper['iname'] + (esper['awake'] == 2 ? '_AW1' : '');
                 var esperLvl = xpToLvl(parseInt(esper['exp']), esperIname);
@@ -209,7 +270,7 @@ function addPlayers(res, team){
                 for (var k = 0; k < stats.length; k++){
                     var scale = (parseInt(rawEsper['status'][1][stats[k]]) - parseInt(rawEsper['status'][0][stats[k]])) / (esperMaxLevel - 1);
                     var baseVal = parseInt(rawEsper['status'][0][stats[k]]) + scale * (esperLvl - 1);
-                    esperStats[stats[k]] = baseVal * esperResonanceMultiplier;
+                    esperStats[stats[k]] = Math.ceil(baseVal * esperResonanceMultiplier);
                 }
                 roundStats(esperStats);
                 // console.log('esperStats');
@@ -243,15 +304,14 @@ function addPlayers(res, team){
                 }
                 // console.log('visionCardStats');
                 // console.log(visionCardStats);
-                
-                var visionCardAwake = parseInt(visionCard['awake']);   
+                 
                 var visionCardSelfBuff = [rawVisionCard["self_buff"]];
-                if (visionCardAwake > 0) visionCardSelfBuff.push(rawVisionCard["add_self_buff_awake"]);
+                if (visionCard['awake'] > 0) visionCardSelfBuff.push(rawVisionCard["add_self_buff_awake"]);
                 if (visionCardLvl == visionCardMaxLvl) visionCardSelfBuff.push(rawVisionCard["add_self_buff_lvmax"]);
                 for (var p = 0; p < visionCardSelfBuff.length; p++){
                     var supAbil = visionCardSelfBuff[p];
                     if (supAbil == null) continue;
-                    var lvlToUse = supAbil.includes('PAW') ? visionCardAwake : visionCardLvl;
+                    var lvlToUse = supAbil.includes('PAW') ? visionCard['awake'] : visionCardLvl;
                     var maxLvlToUse = supAbil.includes('PAW') ? 4 : visionCardMaxLvl;
                     var supSkillBuffs = GameData['Skill']['items'].find(q => q['iname'] == supAbil)['s_buffs'];
                     if (supSkillBuffs == null) supSkillBuffs = GameData['Skill']['items'].find(q => q['iname'] == supAbil)['t_buffs'];
@@ -265,19 +325,18 @@ function addPlayers(res, team){
                 // console.log(visionCardSelfBuffStats);            
             }
             for (var v = 0; v < player['parties'][0]['visioncards'].length; v++){
-                var visionCard = player['parties'][0]['visioncards'][v];
-                if (!visionCard['iname']) continue;
-                var rawVisionCard = GameData['VisionCard']['items'].find(q => q['iname'] === visionCard['iname']);
-                var visionCardLvl = xpToLvl(parseInt(visionCard['exp']), 'VisionCardLvTbl');
+                var groupVisionCard = player['parties'][0]['visioncards'][v];
+                if (!groupVisionCard['iname']) continue;
+                var rawVisionCard = GameData['VisionCard']['items'].find(q => q['iname'] === groupVisionCard['iname']);
+                var groupVisionCardLvl = xpToLvl(parseInt(groupVisionCard['exp']), 'VisionCardLvTbl');
                 var visionCardMaxLvl = rawVisionCard['rare'] == 4 ? 99 : rawVisionCard['rare'] == 3 ? 70 : rawVisionCard['rare'] == 2 ? 60 : 30;
-                var visionCardAwake = parseInt(visionCard['awake']);
                 var visionCardPartyBuff = [rawVisionCard["card_skill"]];
-                if (visionCardAwake > 0) visionCardPartyBuff.push(rawVisionCard["add_card_skill_buff_awake"]);
-                if (visionCardLvl == visionCardMaxLvl) visionCardPartyBuff.push(rawVisionCard["add_card_skill_buff_lvmax"]);
+                if (groupVisionCard['awake'] > 0) visionCardPartyBuff.push(rawVisionCard["add_card_skill_buff_awake"]);
+                if (groupVisionCardLvl == visionCardMaxLvl) visionCardPartyBuff.push(rawVisionCard["add_card_skill_buff_lvmax"]);
                 for (var p = 0; p < visionCardPartyBuff.length; p++){
                     var supAbil = visionCardPartyBuff[p];
                     if (supAbil == null) continue;
-                    var lvlToUse = supAbil.includes('GSAW') ? visionCardAwake : visionCardLvl;
+                    var lvlToUse = supAbil.includes('GSAW') ? groupVisionCard['awake'] : groupVisionCardLvl;
                     var maxLvlToUse = supAbil.includes('GSAW') ? 4 : visionCardMaxLvl;
                     var supSkillBuffs = GameData['Skill']['items'].find(q => q['iname'] == supAbil)['s_buffs'];
                     if (supSkillBuffs == null) supSkillBuffs = GameData['Skill']['items'].find(q => q['iname'] == supAbil)['t_buffs'];
@@ -345,15 +404,90 @@ function addPlayers(res, team){
             // console.log(unitStats);
             totalAtk += unitStats['atk'];
             totalMag += unitStats['mag'];
-            playerCard += '<div style="width: 75px; height: 75px; overflow: hidden;float:left;"><img src=\'' + unitSrc + '\' width=100 height=100 alt="' + unitStats['atk'] + '"></img></div>';
+            
+            
+            var jobLvls = [1, 1, 1];
+            for (var m = 0; m < unit['jobs'].length; m++){
+                if (unit['jobs'][m]['job_iname'] == rawUnit['jobsets'][0]) jobLvls[0] = unit['jobs'][m]['lv'];
+                if (unit['jobs'][m]['job_iname'] == rawUnit['jobsets'][1]) jobLvls[1] = unit['jobs'][m]['lv'];
+                if (unit['jobs'][m]['job_iname'] == rawUnit['jobsets'][2]) jobLvls[2] = unit['jobs'][m]['lv'];
+            }
+            var boardNodes = {};
+            var support = ["0", "0"];
+            var abil1 = unit['abilities'].find(a=>a['id'] == unit['abilset']['sup1'])['ability_iname'];
+            var abil2 = unit['abilities'].find(a=>a['id'] == unit['abilset']['sup2'])['ability_iname'];
+            for (var k = 0; k < unit['abilityboards'].length; k++){     
+                var panel = abilityBoardPanel.find(e=>e['panel_id'] == unit['abilityboards'][k]);
+                var ability = unit['abilities'].find(a=>a['ability_iname'] == panel['value']);
+                boardNodes[unit['abilityboards'][k]] = ability ? ability['lv'] : 1;
+                if (panel['value'] == abil1) support[0] = panel['panel_id'].toString();
+                if (panel['value'] == abil2) support[1] = panel['panel_id'].toString();
+            }
+            var equipments = [];
+            for (var k = 0; k < artifacts.length; k++){
+                var artifact = player['parties'][0]['artifacts'].find(a=>a['id'] == artifacts[k]);
+                var rawArtifact = GameData['Artifact']['items'].find(q => q['iname'] === artifact['iname']);
+                var buildStat = {};
+                for (var s = 0; s < Object.keys(builderStats).length; s++){
+                    var statValue = 0;                    
+                    if (!rawArtifact['status'][1][Object.keys(builderStats)[s]]) continue;
+                    else if (artifact['grow'] === 'ARTIFACT_50'){
+                        // var awakes = GameData['ArtifactAwake']['items'].find(q => q['iname'] === artifact['iname'])['awakes'];
+                        // var maxLvl = awakes[awakes.length - 1]['lv'];
+                        var scale = (parseInt(rawArtifact['status'][1][Object.keys(builderStats)[s]]) - parseInt(rawArtifact['status'][0][Object.keys(builderStats)[s]])) / (30 - 1);
+                        var artifactLvl = xpToLvl(artifact['exp'], 'ArtifactLvTbl');
+                        statValue = parseInt(rawArtifact['status'][0][Object.keys(builderStats)[s]]) + scale * (artifactLvl - 1);
+                    }
+                    else if (artifact['grow'] === 'ARTIFACT_TRUST') statValue = rawArtifact['status'][0][Object.keys(builderStats)[s]];
+                    else statValue = (artifact[Object.keys(builderStats)[s]] ?? 0) + rawArtifact['status'][0][Object.keys(builderStats)[s]];
+                    buildStat[builderStats[Object.keys(builderStats)[s]]] = statValue;
+                }
+                var artifactName = artifact['iname'];
+                var plus = 0;
+                var plusRegex = artifact['iname'].match('(.*[0-9]{3})(_)([1-5])');
+                if (plusRegex) {
+                    artifactName = plusRegex[1];
+                    plus = plusRegex[3];
+                }                
+                equipments.push({
+                    dataId : artifactName,
+                    upgrade : plus.toString(),
+                    grow : artifact['grow'],
+                    level : xpToLvl(artifact['exp'], 'ArtifactLvTbl'),
+                    skill : {},
+                    stats : buildStat
+                });
+            }
+            var wotvBuilder = {
+                "dataId": unit['iname'],
+                "star": unit['awake'],
+                "lb": unit['rank'],
+                "level": unitLvl,
+                "jobs": jobLvls,
+                "nodes": boardNodes,
+                "masterSkill": unit['abilities'].find(a=>a['ability_iname'] == rawUnit['mstskl'])['lv'] ? 0 : -1,
+                "activatedSupport": support,
+                "esper": {
+                    "dataId": esper['iname'],
+                    "star": esper['awake'],
+                    "level": esperLvl.toString(),
+                    "nodes": esper['abilityboards'].reduce(function(map, obj){map[obj] = 1; return map;}, {}),
+                    "resonance": esperResonance.toString()
+                },
+                "card": {
+                    "dataId": visionCard['iname'],
+                    "star": visionCard['awake'],
+                    "level": visionCardLvl.toString()
+                },
+                "equipments":  equipments
+            };
+            var buildUrl = 'https://wotv-calc.com/builder/unit/' + btoa(JSON.stringify(wotvBuilder));
+            // console.log(JSON.stringify(wotvBuilder));
+            //playerCard += '<div style="width: 75px; height: 75px; overflow: hidden;float:left;"><img src=\'' + unitSrc + '\' width=100 height=100 alt="' + unitStats['atk'] + '" href="' + buildUrl + '"></img></div>';
+            playerCard += '<div style="width: 75px; height: 75px; overflow: hidden;float:left;"><a href="' + buildUrl + '" target="_blank"><img src=\'' + unitSrc + '\' width=100 height=100"></img></a></div>';
         }
         playerCard += '<div style="float:left;">' + totalAtk.toFixed(0) + ' ATK<br>' + totalMag.toFixed(0) + ' MAG</div>';
         var rank = xpToLvl(parseInt(player['experience']), 'PlayerLvTbl');
-        $('#' + team).append('<li style="margin: 10px 0;"><button class="btn btn-primary nav-link btn-block active">' +
-            player['name'] + ' (Rank ' + rank + ')<br>' + playerCard + '</button></li>');
-        /*$('#ally').children('tbody').append(
-            '<tr><th>' + '<button class="btn btn-primary nav-link btn-block active" onclick="showPlayer(\'' + id + '\', \'' + record['id'] + '\')">' + (record['status'] == 1 ? '✔' : '❌') + '</button>' + '</th><td>' +                 
-            '<button class="btn btn-primary nav-link btn-block active" onclick="showGuildRecord(\'' + record['guild_id'] + '\')">' + record['name'] + '</button>' + 
-            '</td><td>' + record['ally_star'] + '</td><td>' + record['ally_damage'] + '</td><td>' + record['enemy_star'] + '</td><td>' + record['enemy_damage'] + '</td></tr>');*/
+        $('#' + team).append('<li style="margin: 10px 0;"><button class="btn btn-primary nav-link btn-block active">' + player['name'] + ' (Rank ' + rank + ')<br>' + playerCard + '</button></li>');
     }
 }
